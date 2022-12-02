@@ -1,0 +1,68 @@
+version: "3"
+networks:
+  mynetwork:
+    ipam:
+      config:
+        - subnet: 192.168.30.0/24
+services:
+  broker:
+    image: ubuntu
+    container_name: broker
+    restart: always
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./broker:/app
+    ports:
+      - '4000:4000'
+    networks:
+      mynetwork:
+        ipv4_address: 192.168.30.2
+
+  firstSubscriber:
+    image: ubuntu
+    container_name: firstSubscriber
+    restart: always
+    stdin_open: true
+    tty: true
+    depends_on:
+      - broker
+    volumes:
+      - ./firstSubscriber:/app
+    ports:
+      - '4001:4001'
+    networks:
+      mynetwork:
+        ipv4_address: 192.168.30.3
+
+  secondSubscriber:
+    image: ubuntu
+    container_name: secondSubscriber
+    restart: always
+    stdin_open: true
+    tty: true
+    depends_on:
+      - firstSubscriber
+    volumes:
+      - ./secondSubscriber:/app
+    ports:
+      - '4002:4002'
+    networks:
+      mynetwork:
+        ipv4_address: 192.168.30.4
+
+  publisher:
+    image: ubuntu
+    container_name: publisher
+    restart: always
+    stdin_open: true
+    tty: true
+    depends_on:
+      - secondSubscriber
+    volumes:
+      - ./publisher:/app
+    ports:
+      - '4003:4003'
+    networks:
+      mynetwork:
+        ipv4_address: 192.168.30.5

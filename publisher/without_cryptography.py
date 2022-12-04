@@ -26,42 +26,29 @@ ID = ''
 
 initial_time = time.time()
 
-# Cria o socket que será usado para a conexão SSL
-context = ssl.SSLContext()
-context.verify_mode = ssl.CERT_REQUIRED
-
-context.load_verify_locations("./mycert.pem")
-
-context.load_cert_chain(certfile="./mycert.pem", keyfile="./mycert.pem")
-
+# Cria o socket
 clientSocket = socket()
 clientSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-
-# Cria o socket seguro SSL
-secureClientSocket = context.wrap_socket(clientSocket)
 
 # Tenta se conectar com o servidor
 connected = False
 while not connected:
     try:
-        secureClientSocket.connect((servidor, porta))
+        clientSocket.connect((servidor, porta))
         connected = True
     except Exception as e:
         pass
 
-server_cert = secureClientSocket.getpeercert()
+clientSocket.send('AUTHENTICATE'.encode())
 
-secureClientSocket.send('AUTHENTICATE'.encode())
-
-Ci = secureClientSocket.recv(1024)
+Ci = clientSocket.recv(1024)
 
 Ri = '37c0480063021011988c0095'
-secureClientSocket.send(Ri.encode())
+clientSocket.send(Ri.encode())
 
-Sid = secureClientSocket.recv(1024).decode()
+Sid = clientSocket.recv(1024).decode()
 
 # Fecha as conexões seguras
-secureClientSocket.close()
 clientSocket.close()
 
 # Atibue uma nova porta para ser usada na próxima conexão
@@ -292,30 +279,17 @@ obj_socket.close()
 
 cont = 0
 
-while cont < 10000:
-    # Cria o socket que será usado para a conexão SSL
-    context = ssl.SSLContext()
-    context.verify_mode = ssl.CERT_REQUIRED
-
-    context.load_verify_locations("./mycert.pem")
-
-    context.load_cert_chain(certfile="./mycert.pem", keyfile="./mycert.pem")
-
+while cont < 1000:
+    # Cria o socket
     clientSocket = socket()
     clientSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
 
-    # Cria o socket seguro SSL
-    secureClientSocket = context.wrap_socket(clientSocket)
-
     # Tenta se conectar com o servidor
-    secureClientSocket.connect((servidor, porta))
+    clientSocket.connect((servidor, porta))
 
-    server_cert = secureClientSocket.getpeercert()
-
-    secureClientSocket.send(('CONNECT' + ';' + str(Sid)).encode())
+    clientSocket.send(('CONNECT' + ';' + str(Sid)).encode())
 
     # Fecha as conexões seguras
-    secureClientSocket.close()
     clientSocket.close()
 
     # time.sleep(10)
@@ -335,22 +309,12 @@ while cont < 10000:
         except Exception as e:
             pass
 
-    Ci_enc = new_socket.recv(1024).decode()
-
-    # Decripta a mensagem recebida
-    decipher = AES.new(bytes(key, 'utf-8'), AES.MODE_ECB)
-    Ci_enc = b64decode(Ci_enc[2:-1])
-    Ci_dec = unpad(decipher.decrypt(Ci_enc), 16).decode()
+    Ci_dec = new_socket.recv(1024).decode()
 
     if str(Ci_dec) == str(Ci)[2:-1]:
         # print("Ci recebido")
 
-        # Encripta a mensagem para enviar
-        cipher = AES.new(bytes(key, 'utf-8'), AES.MODE_ECB)
-        Ri_enc = cipher.encrypt(pad(bytes(str(Ri), 'utf-8'), 16))
-        msg = b64encode(Ri_enc)
-
-        new_socket.send(str(msg).encode())
+        new_socket.send(str(Ri).encode())
 
         ok_rec = new_socket.recv(1024).decode()
 
@@ -359,12 +323,7 @@ while cont < 10000:
 
             Hlogin_password_id = hashlib.sha1((str(ID) + str(Password) + str(Login)).encode()).hexdigest()
 
-            # Encripta a mensagem para enviar
-            cipher = AES.new(bytes(key, 'utf-8'), AES.MODE_ECB)
-            Hlogin_pass_id_enc = cipher.encrypt(pad(bytes(str(Hlogin_password_id), 'utf-8'), 16))
-            msg = b64encode(Hlogin_pass_id_enc)
-
-            new_socket.send(str(msg).encode())
+            new_socket.send(str(Hlogin_password_id).encode())
 
             auth_rec = new_socket.recv(1024).decode()
 

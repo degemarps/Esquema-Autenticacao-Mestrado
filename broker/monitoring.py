@@ -1,5 +1,6 @@
 import psutil
 import time
+from datetime import datetime
 
 def bytes_to_mega(value):
   return f'{value / 1024 / 1024: .2f}MB'
@@ -9,7 +10,7 @@ while True:
   cpu = psutil.cpu_percent()
 
   with open('results.txt', 'a') as file:
-    file.write(f'{memory} - {cpu}\n')
+    file.write(f'{datetime.now()} - {memory} - {cpu} - {psutil.cpu_times()} - {psutil.net_io_counters(pernic=True)}\n')
   
   time.sleep(0.5)
 
